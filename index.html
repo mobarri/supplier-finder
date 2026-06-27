@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>باحث الموردين - مكونات إلكترونية</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  :root {
+    --bg: #0d0f14; --surface: #151821; --surface2: #1c2030;
+    --border: #252a3a; --accent: #00d4ff; --accent2: #7c3aed;
+    --green: #00e676; --yellow: #ffd600; --red: #ff5252;
+    --text: #e8eaf0; --muted: #6b7280;
+    --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans Arabic', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; direction: rtl; }
+
+  .header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 18px 24px; display: flex; align-items: center; gap: 12px;
+  }
+  .header-icon {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .header h1 { font-size: 17px; font-weight: 600; }
+  .header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .region-badge {
+    margin-right: auto; background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.3); color: var(--accent);
+    font-size: 12px; padding: 4px 12px; border-radius: 20px;
+  }
+
+  /* API Config */
+  .config-section {
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+    padding: 12px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .config-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .config-input {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 12px; color: var(--text); font-family: var(--mono); font-size: 12px;
+    outline: none; flex: 1; min-width: 180px; transition: border-color 0.2s;
+  }
+  .config-input:focus { border-color: var(--accent); }
+  .config-input::placeholder { color: var(--muted); }
+  .config-divider { color: var(--border); font-size: 20px; }
+  .config-status { font-size: 11px; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+  .status-ok { background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.3); color: var(--green); }
+  .status-missing { background: rgba(255,82,82,0.08); border: 1px solid rgba(255,82,82,0.2); color: var(--red); }
+
+  /* Search */
+  .search-section { padding: 24px; max-width: 860px; margin: 0 auto; }
+  .search-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .search-box label { font-size: 13px; color: var(--muted); margin-bottom: 4px; display: block; }
+  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+  .input-wrap { flex: 1; }
+  input[type="text"] {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px; color: var(--text);
+    font-family: var(--sans); font-size: 15px; outline: none; transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+    font-size: 12px; padding: 5px 12px; border-radius: 20px; cursor: pointer;
+    transition: all 0.2s; font-family: var(--sans);
+  }
+  .chip:hover, .chip.active { background: rgba(0,212,255,0.1); border-color: var(--accent); color: var(--accent); }
+  .btn-search {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none; border-radius: 10px; color: #fff; font-family: var(--sans);
+    font-size: 15px; font-weight: 600; padding: 12px 28px; cursor: pointer;
+    white-space: nowrap; transition: opacity 0.2s;
+  }
+  .btn-search:hover { opacity: 0.9; }
+  .btn-search:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Loading */
+  .loading { display: none; text-align: center; padding: 48px 24px; }
+  .loading.show { display: block; }
+  .spinner {
+    width: 44px; height: 44px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.9s linear infinite; margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-steps { color: var(--muted); font-size: 13px; line-height: 2.2; }
+  .loading-steps span { display: block; }
+  .step-done { color: var(--green) !important; }
+
+  /* Results */
+  .results { padding: 0 24px 40px; max-width: 860px; margin: 0 auto; display: none; }
+  .results-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .results-header h2 { font-size: 15px; font-weight: 600; }
+  .results-count { background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.3); color: var(--green); font-size: 12px; padding: 3px 10px; border-radius: 20px; }
+
+  .summary-bar {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  }
+  .summary-stat { text-align: center; }
+  .summary-stat .val { font-size: 22px; font-weight: 700; color: var(--accent); font-family: var(--mono); }
+  .summary-stat .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .recommendation {
+    background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(0,212,255,0.1));
+    border: 1px solid rgba(0,212,255,0.2); border-radius: 14px; padding: 20px; margin-bottom: 20px;
+  }
+  .rec-title { font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 10px; }
+  .rec-text { font-size: 14px; line-height: 1.8; }
+
+  /* Source links */
+  .sources-bar {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px; margin-bottom: 20px;
+    font-size: 12px; color: var(--muted);
+  }
+  .sources-bar strong { color: var(--text); display: block; margin-bottom: 8px; }
+  .source-link {
+    display: inline-block; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 3px 10px; margin: 3px; color: var(--accent);
+    text-decoration: none; font-size: 11px; transition: border-color 0.2s;
+  }
+  .source-link:hover { border-color: var(--accent); }
+
+  /* Supplier card */
+  .supplier-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; margin-bottom: 16px; overflow: hidden; transition: border-color 0.2s;
+  }
+  .supplier-card:hover { border-color: rgba(0,212,255,0.3); }
+  .supplier-card.best { border-color: rgba(0,230,118,0.4); }
+  .card-header { padding: 16px 20px; display: flex; align-items: flex-start; gap: 14px; border-bottom: 1px solid var(--border); }
+  .supplier-rank {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 14px; font-weight: 600; flex-shrink: 0; color: var(--muted);
+  }
+  .supplier-card.best .supplier-rank { background: rgba(0,230,118,0.15); color: var(--green); border: 1px solid rgba(0,230,118,0.4); }
+  .supplier-info { flex: 1; }
+  .supplier-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .supplier-meta { display: flex; gap: 12px; flex-wrap: wrap; }
+  .meta-item { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+  .card-badges { display: flex; gap: 8px; flex-direction: column; align-items: flex-end; }
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; white-space: nowrap; }
+  .badge-best { background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.3); color: var(--green); }
+  .badge-available { background: rgba(0,230,118,0.08); border: 1px solid rgba(0,230,118,0.2); color: var(--green); }
+  .badge-partial { background: rgba(255,214,0,0.08); border: 1px solid rgba(255,214,0,0.2); color: var(--yellow); }
+  .badge-unavailable { background: rgba(255,82,82,0.08); border: 1px solid rgba(255,82,82,0.2); color: var(--red); }
+  .card-body { padding: 16px 20px; }
+  .products-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .products-table th {
+    text-align: right; padding: 8px 12px; background: var(--surface2);
+    color: var(--muted); font-weight: 500; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .products-table th:first-child { border-radius: 8px 0 0 8px; }
+  .products-table th:last-child { border-radius: 0 8px 8px 0; }
+  .products-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .products-table tr:last-child td { border-bottom: none; }
+  .price-val { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--accent); }
+  .price-cheap { color: var(--green); }
+  .avail-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 6px; }
+  .dot-green { background: var(--green); }
+  .dot-yellow { background: var(--yellow); }
+  .dot-red { background: var(--red); }
+  .card-footer {
+    padding: 12px 20px; background: var(--surface2);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 8px; font-size: 12px;
+  }
+  .footer-note { color: var(--muted); }
+  .btn-visit {
+    background: transparent; border: 1px solid var(--accent); color: var(--accent);
+    font-family: var(--sans); font-size: 12px; padding: 6px 16px;
+    border-radius: 8px; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.2s;
+  }
+  .btn-visit:hover { background: rgba(0,212,255,0.1); }
+
+  .error-box {
+    background: rgba(255,82,82,0.08); border: 1px solid rgba(255,82,82,0.2);
+    border-radius: 12px; padding: 20px; color: var(--red); font-size: 14px;
+    display: none; margin: 0 24px;
+  }
+  .error-box.show { display: block; }
+
+  @media (max-width: 600px) {
+    .input-row { flex-direction: column; }
+    .summary-bar { grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .summary-stat .val { font-size: 18px; }
+    .config-section { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">⚡</div>
+  <div>
+    <h1>باحث الموردين الذكي</h1>
+    <p>بحث حقيقي · مكونات إلكترونية · Arduino · ESP32 · حساسات</p>
+  </div>
+  <div class="region-badge">📍 منطقة الجوف</div>
+</div>
+
+<!-- API Keys Config -->
+<div class="config-section">
+  <span class="config-label">🔑 Tavily API:</span>
+  <input class="config-input" id="tavilyKey" type="password" placeholder="tvly-xxxxxxxxxxxxxxxx" oninput="updateStatus()" />
+  <div class="config-divider">|</div>
+  <span class="config-label">🤖 Groq API:</span>
+  <input class="config-input" id="groqKey" type="password" placeholder="gsk_xxxxxxxxxxxxxxxx" oninput="updateStatus()" />
+  <span class="config-status status-missing" id="apiStatus">⚠ أدخل المفاتيح</span>
+</div>
+
+<div class="search-section">
+  <div class="search-box">
+    <div>
+      <label>المنتج الذي تبحث عنه</label>
+      <div class="input-row">
+        <div class="input-wrap">
+          <input type="text" id="productInput" placeholder="مثال: Arduino Uno R3، ESP32، حساس DHT22..." />
+        </div>
+        <button class="btn-search" id="searchBtn" onclick="startSearch()">🔍 ابحث الآن</button>
+      </div>
+    </div>
+    <div>
+      <label>بحث سريع</label>
+      <div class="chips">
+        <span class="chip" onclick="setProduct(this,'Arduino Uno R3')">Arduino Uno R3</span>
+        <span class="chip" onclick="setProduct(this,'ESP32 DevKit')">ESP32 DevKit</span>
+        <span class="chip" onclick="setProduct(this,'حساس DHT22')">حساس DHT22</span>
+        <span class="chip" onclick="setProduct(this,'مقاومات كيت 400 قطعة')">مقاومات كيت</span>
+        <span class="chip" onclick="setProduct(this,'Raspberry Pi 4')">Raspberry Pi 4</span>
+        <span class="chip" onclick="setProduct(this,'HC-SR04 ultrasonic sensor')">حساس HC-SR04</span>
+        <span class="chip" onclick="setProduct(this,'OLED display 0.96 inch')">شاشة OLED 0.96</span>
+        <span class="chip" onclick="setProduct(this,'18650 lithium battery')">بطارية 18650</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-steps" id="loadingSteps"></div>
+</div>
+
+<div class="error-box" id="errorBox"></div>
+<div class="results" id="results"></div>
+
+<script>
+const REGION = "Al-Jawf region, Saudi Arabia";
+
+function updateStatus() {
+  const t = document.getElementById('tavilyKey').value.trim();
+  const g = document.getElementById('groqKey').value.trim();
+  const el = document.getElementById('apiStatus');
+  if (t && g) {
+    el.textContent = '✓ جاهز للبحث'; el.className = 'config-status status-ok';
+  } else {
+    el.textContent = '⚠ أدخل المفاتيح'; el.className = 'config-status status-missing';
+  }
+}
+
+function setProduct(el, name) {
+  document.getElementById('productInput').value = name;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+const steps = [
+  "🌐 جاري البحث في الإنترنت عن موردين حقيقيين...",
+  "📦 تحليل صفحات المواقع والأسعار...",
+  "📍 حساب المسافة من منطقة الجوف...",
+  "🤖 الذكاء الاصطناعي يحلل النتائج...",
+  "📋 إعداد التقرير المفصل..."
+];
+
+let stepInterval;
+function setLoading(show) {
+  document.getElementById('loading').classList.toggle('show', show);
+  document.getElementById('searchBtn').disabled = show;
+  document.getElementById('results').style.display = show ? 'none' : 'block';
+  document.getElementById('errorBox').classList.remove('show');
+  if (show) {
+    let i = 0;
+    const el = document.getElementById('loadingSteps');
+    el.innerHTML = `<span>${steps[0]}</span>`;
+    stepInterval = setInterval(() => {
+      if (i < steps.length - 1) {
+        const prev = el.querySelectorAll('span');
+        prev.forEach(s => s.classList.add('step-done'));
+        i++;
+        el.innerHTML += `<span>${steps[i]}</span>`;
+      }
+    }, 2500);
+  } else {
+    clearInterval(stepInterval);
+  }
+}
+
+function showError(msg) {
+  setLoading(false);
+  const eb = document.getElementById('errorBox');
+  eb.innerHTML = msg;
+  eb.classList.add('show');
+}
+
+async function searchWithTavily(query, apiKey) {
+  const res = await fetch("https://api.tavily.com/search", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      api_key: apiKey,
+      query: query,
+      search_depth: "advanced",
+      max_results: 8,
+      include_answer: false,
+      include_raw_content: false
+    })
+  });
+  if (!res.ok) throw new Error("Tavily search failed: " + res.status);
+  return await res.json();
+}
+
+async function analyzeWithGroq(searchResults, product, groqKey) {
+  const resultsText = searchResults.results.map((r, i) =>
+    `[${i+1}] العنوان: ${r.title}\nالرابط: ${r.url}\nالمحتوى: ${r.content}`
+  ).join('\n\n');
+
+  const prompt = `أنت خبير في سوق المكونات الإلكترونية في المملكة العربية السعودية.
+
+المستخدم يبحث عن: "${product}"
+منطقة المستخدم: منطقة الجوف، المملكة العربية السعودية
+
+نتائج البحث الحقيقية من الإنترنت:
+${resultsText}
+
+بناءً على نتائج البحث الحقيقية أعلاه، قم بإنشاء تقرير JSON مفصل عن الموردين.
+استخدم فقط المعلومات الموجودة في نتائج البحث — لا تخترع موردين أو أسعاراً.
+إذا لم تجد سعراً محدداً، اكتب null لقيمة price_sar.
+
+يجب أن يكون الرد JSON فقط بهذا الشكل:
+{
+  "product": "اسم المنتج",
+  "region": "منطقة الجوف",
+  "recommendation": "توصية موجزة بأفضل خيار مع السبب",
+  "sources_used": ["رابط1", "رابط2"],
+  "suppliers": [
+    {
+      "rank": 1,
+      "name": "اسم المورد",
+      "website": "الرابط الحقيقي من نتائج البحث",
+      "type": "نوع المورد",
+      "distance_km": 900,
+      "delivery_days": "3-5 أيام",
+      "rating": 4.2,
+      "total_score": 85,
+      "is_best": true,
+      "products": [
+        {
+          "name": "اسم المنتج",
+          "model": "الموديل",
+          "price_sar": 45,
+          "is_cheapest": true,
+          "availability": "متوفر",
+          "stock_note": "ملاحظة"
+        }
+      ],
+      "shipping_cost": "مجاني فوق 200 ريال",
+      "payment_methods": ["بطاقة ائتمان", "تحويل بنكي"],
+      "pros": ["ميزة 1", "ميزة 2"],
+      "cons": ["عيب 1"],
+      "contact": "معلومات التواصل",
+      "notes": "ملاحظات مفيدة"
+    }
+  ]
+}`;
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${groqKey}`
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      max_tokens: 3000,
+      temperature: 0.3,
+      messages: [
+        { role: "system", content: "أنت خبير موردين. ترد بـ JSON فقط بدون أي نص إضافي أو markdown." },
+        { role: "user", content: prompt }
+      ]
+    })
+  });
+  if (!res.ok) {
+    const e = await res.json();
+    throw new Error("Groq error: " + (e.error?.message || res.status));
+  }
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+async function startSearch() {
+  const product = document.getElementById('productInput').value.trim();
+  const tavilyKey = document.getElementById('tavilyKey').value.trim();
+  const groqKey = document.getElementById('groqKey').value.trim();
+
+  if (!product) { document.getElementById('productInput').focus(); return; }
+  if (!tavilyKey || !groqKey) {
+    showError('⚠️ يرجى إدخال مفتاحي Tavily و Groq في الحقول أعلاه.');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    // Step 1: Search with Tavily
+    const query1 = `${product} supplier Saudi Arabia price buy online`;
+    const query2 = `${product} شراء سعر مورد السعودية`;
+    const [r1, r2] = await Promise.all([
+      searchWithTavily(query1, tavilyKey),
+      searchWithTavily(query2, tavilyKey)
+    ]);
+
+    // Merge results
+    const combined = { results: [...(r1.results || []), ...(r2.results || [])] };
+    const seen = new Set();
+    combined.results = combined.results.filter(r => {
+      if (seen.has(r.url)) return false;
+      seen.add(r.url); return true;
+    }).slice(0, 10);
+
+    if (combined.results.length === 0) {
+      showError('⚠️ لم يتم العثور على نتائج بحث. تحقق من مفتاح Tavily أو جرب منتجاً آخر.');
+      return;
+    }
+
+    // Step 2: Analyze with Groq
+    const rawJson = await analyzeWithGroq(combined, product, groqKey);
+    const clean = rawJson.replace(/```json|```/g, '').trim();
+    const match = clean.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("لم يُرجع الذكاء الاصطناعي JSON صحيحاً");
+    const result = JSON.parse(match[0]);
+    result._rawSources = combined.results;
+
+    setLoading(false);
+    renderResults(result);
+  } catch (err) {
+    showError(`⚠️ خطأ: ${err.message}<br><small style="color:var(--muted)">تحقق من المفاتيح أو اتصال الإنترنت</small>`);
+    console.error(err);
+  }
+}
+
+function getAvailBadge(a) {
+  if (a === "متوفر") return '<span class="badge badge-available">✓ متوفر</span>';
+  if (a === "متوفر جزئياً") return '<span class="badge badge-partial">◐ جزئياً</span>';
+  return '<span class="badge badge-unavailable">✗ غير متوفر</span>';
+}
+function getDot(a) {
+  if (a === "متوفر") return '<span class="avail-dot dot-green"></span>';
+  if (a === "متوفر جزئياً") return '<span class="avail-dot dot-yellow"></span>';
+  return '<span class="avail-dot dot-red"></span>';
+}
+
+function renderResults(data) {
+  const container = document.getElementById('results');
+  container.style.display = 'block';
+  const available = (data.suppliers||[]).filter(s => s.products?.some(p => p.availability === "متوفر")).length;
+  const allPrices = (data.suppliers||[]).flatMap(s => (s.products||[]).map(p => p.price_sar)).filter(Boolean);
+  const minPrice = allPrices.length ? Math.min(...allPrices) : '—';
+  const maxPrice = allPrices.length ? Math.max(...allPrices) : '—';
+
+  const sourcesHtml = (data._rawSources || []).slice(0, 6).map(s =>
+    `<a class="source-link" href="${s.url}" target="_blank">🔗 ${new URL(s.url).hostname}</a>`
+  ).join('');
+
+  let html = `
+    <div class="results-header">
+      <h2>نتائج البحث عن: <span style="color:var(--accent)">${data.product}</span></h2>
+      <span class="results-count">${(data.suppliers||[]).length} موردين</span>
+    </div>
+    <div class="summary-bar">
+      <div class="summary-stat"><div class="val">${(data.suppliers||[]).length}</div><div class="lbl">موردين</div></div>
+      <div class="summary-stat"><div class="val">${available}</div><div class="lbl">لديهم المنتج</div></div>
+      <div class="summary-stat"><div class="val">${minPrice}–${maxPrice}</div><div class="lbl">نطاق السعر (ر.س)</div></div>
+    </div>
+    <div class="recommendation">
+      <div class="rec-title">⭐ توصية الذكاء الاصطناعي لمنطقة الجوف</div>
+      <div class="rec-text">${data.recommendation || '—'}</div>
+    </div>
+    <div class="sources-bar">
+      <strong>🌐 المصادر التي تم البحث فيها فعلياً:</strong>
+      ${sourcesHtml || '<span>لا توجد مصادر</span>'}
+    </div>
+  `;
+
+  (data.suppliers || []).sort((a,b) => b.total_score - a.total_score).forEach(s => {
+    const isBest = s.is_best;
+    const rows = (s.products || []).map(p => `
+      <tr>
+        <td>${p.name || '—'}${p.model ? `<br><span style="font-size:11px;color:var(--muted)">${p.model}</span>` : ''}</td>
+        <td><span class="price-val ${p.is_cheapest ? 'price-cheap' : ''}">${p.price_sar ? p.price_sar + ' ر.س' : 'غير محدد'}${p.is_cheapest ? ' 🏷️' : ''}</span></td>
+        <td>${getDot(p.availability)}${p.availability || '—'}</td>
+        <td style="font-size:12px;color:var(--muted)">${p.stock_note || '—'}</td>
+      </tr>`).join('');
+
+    html += `
+      <div class="supplier-card ${isBest ? 'best' : ''}">
+        <div class="card-header">
+          <div class="supplier-rank">${s.rank}</div>
+          <div class="supplier-info">
+            <div class="supplier-name">${s.name}</div>
+            <div class="supplier-meta">
+              <span class="meta-item">🌐 ${s.type || '—'}</span>
+              <span class="meta-item">📍 ~${s.distance_km || '?'} كم</span>
+              <span class="meta-item">🚚 ${s.delivery_days || '—'}</span>
+              <span class="meta-item">⭐ ${s.rating || '—'}/5</span>
+              <span class="meta-item" style="font-family:var(--mono);color:var(--accent)">نقاط: ${s.total_score || '—'}</span>
+            </div>
+          </div>
+          <div class="card-badges">
+            ${isBest ? '<span class="badge badge-best">🏆 الأفضل للجوف</span>' : ''}
+            ${getAvailBadge(s.products?.[0]?.availability)}
+          </div>
+        </div>
+        <div class="card-body">
+          <table class="products-table">
+            <thead><tr><th>المنتج</th><th>السعر</th><th>التوفر</th><th>المخزون</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px">✅ المميزات</div>
+              ${(s.pros||[]).map(p=>`<div style="font-size:13px;margin-bottom:4px">• ${p}</div>`).join('')}
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px">⚠️ العيوب</div>
+              ${(s.cons||[]).map(c=>`<div style="font-size:13px;margin-bottom:4px;color:var(--muted)">• ${c}</div>`).join('')}
+            </div>
+          </div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:12px;font-size:12px">
+            <span>📦 شحن: <strong>${s.shipping_cost || '—'}</strong></span>
+            <span>💳 ${(s.payment_methods||[]).join(' · ')}</span>
+            ${s.contact ? `<span>📞 ${s.contact}</span>` : ''}
+          </div>
+        </div>
+        <div class="card-footer">
+          <span class="footer-note">💡 ${s.notes || ''}</span>
+          <a class="btn-visit" href="${s.website}" target="_blank">زيارة الموقع ←</a>
+        </div>
+      </div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+document.getElementById('productInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startSearch();
+});
+</script>
+</body>
+</html>
