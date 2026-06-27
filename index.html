@@ -188,7 +188,7 @@
     <h1>باحث الموردين الذكي</h1>
     <p>بحث حقيقي · مكونات إلكترونية · Arduino · ESP32 · حساسات</p>
   </div>
-  <div class="region-badge">📍 منطقة الجوف</div>
+  <div class="region-badge" onclick="toggleRegionModal()" style="cursor:pointer" title="اضغط لتغيير المنطقة">📍 <span id="regionLabel">منطقة الجوف</span> ✏️</div>
 </div>
 <div class="search-section">
   <div class="search-box">
@@ -226,7 +226,8 @@
 <div class="results" id="results"></div>
 
 <script>
-const REGION = "Al-Jawf region, Saudi Arabia";
+let REGION = "Al-Jawf region, Saudi Arabia";
+let REGION_AR = "منطقة الجوف";
 
 
 function setProduct(el, name) {
@@ -235,13 +236,13 @@ function setProduct(el, name) {
   el.classList.add('active');
 }
 
-const steps = [
+function getSteps() { return [
   "🌐 جاري البحث في الإنترنت عن موردين حقيقيين...",
   "📦 تحليل صفحات المواقع والأسعار...",
-  "📍 حساب المسافة من منطقة الجوف...",
+  `📍 حساب المسافة من ${REGION_AR}...`,
   "🤖 الذكاء الاصطناعي يحلل النتائج...",
   "📋 إعداد التقرير المفصل..."
-];
+]; }
 
 let stepInterval;
 function setLoading(show) {
@@ -251,6 +252,7 @@ function setLoading(show) {
   document.getElementById('errorBox').classList.remove('show');
   if (show) {
     let i = 0;
+    const steps = getSteps();
     const el = document.getElementById('loadingSteps');
     el.innerHTML = `<span>${steps[0]}</span>`;
     stepInterval = setInterval(() => {
@@ -298,7 +300,7 @@ async function analyzeWithGroq(searchResults, product, groqKey) {
   const prompt = `أنت خبير في سوق المكونات الإلكترونية في المملكة العربية السعودية.
 
 المستخدم يبحث عن: "${product}"
-منطقة المستخدم: منطقة الجوف، المملكة العربية السعودية
+منطقة المستخدم: ${REGION_AR}، المملكة العربية السعودية
 
 نتائج البحث الحقيقية من الإنترنت:
 ${resultsText}
@@ -310,7 +312,7 @@ ${resultsText}
 يجب أن يكون الرد JSON فقط بهذا الشكل:
 {
   "product": "اسم المنتج",
-  "region": "منطقة الجوف",
+  "region": "${REGION_AR}",
   "recommendation": "توصية موجزة بأفضل خيار مع السبب",
   "sources_used": ["رابط1", "رابط2"],
   "suppliers": [
@@ -448,7 +450,7 @@ function renderResults(data) {
       <div class="summary-stat"><div class="val">${minPrice}–${maxPrice}</div><div class="lbl">نطاق السعر (ر.س)</div></div>
     </div>
     <div class="recommendation">
-      <div class="rec-title">⭐ توصية الذكاء الاصطناعي لمنطقة الجوف</div>
+      <div class="rec-title">⭐ توصية الذكاء الاصطناعي لـ <span id="recRegion">منطقة الجوف</span></div>
       <div class="rec-text">${data.recommendation || '—'}</div>
     </div>
     <div class="sources-bar">
@@ -521,5 +523,78 @@ document.getElementById('productInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') startSearch();
 });
 </script>
+
+<!-- Region Modal -->
+<div id="regionModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center">
+  <div style="background:#151821;border:1px solid #252a3a;border-radius:16px;padding:24px;width:90%;max-width:420px;margin:auto;margin-top:15vh">
+    <h3 style="font-size:16px;margin-bottom:16px;color:#e8eaf0">📍 تغيير منطقة البحث</h3>
+    <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:6px">اكتب اسم المنطقة أو المدينة</label>
+    <input id="regionInputAr" type="text" placeholder="مثال: الرياض، جدة، الدمام..." 
+      style="width:100%;background:#0d0f14;border:1px solid #252a3a;border-radius:10px;padding:12px 16px;color:#e8eaf0;font-family:inherit;font-size:15px;outline:none;margin-bottom:10px" />
+    <input id="regionInputEn" type="text" placeholder="English: Riyadh, Jeddah, Dammam..." 
+      style="width:100%;background:#0d0f14;border:1px solid #252a3a;border-radius:10px;padding:12px 16px;color:#e8eaf0;font-family:inherit;font-size:15px;outline:none;margin-bottom:16px" />
+    <div style="font-size:12px;color:#6b7280;margin-bottom:16px">اختر من المدن الشائعة:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+      <span class="r-chip" onclick="selectRegion('منطقة الجوف','Al-Jawf region, Saudi Arabia')">الجوف</span>
+      <span class="r-chip" onclick="selectRegion('الرياض','Riyadh, Saudi Arabia')">الرياض</span>
+      <span class="r-chip" onclick="selectRegion('جدة','Jeddah, Saudi Arabia')">جدة</span>
+      <span class="r-chip" onclick="selectRegion('الدمام','Dammam, Saudi Arabia')">الدمام</span>
+      <span class="r-chip" onclick="selectRegion('مكة المكرمة','Mecca, Saudi Arabia')">مكة</span>
+      <span class="r-chip" onclick="selectRegion('المدينة المنورة','Medina, Saudi Arabia')">المدينة</span>
+      <span class="r-chip" onclick="selectRegion('أبها','Abha, Saudi Arabia')">أبها</span>
+      <span class="r-chip" onclick="selectRegion('تبوك','Tabuk, Saudi Arabia')">تبوك</span>
+      <span class="r-chip" onclick="selectRegion('حائل','Hail, Saudi Arabia')">حائل</span>
+      <span class="r-chip" onclick="selectRegion('القصيم','Qassim, Saudi Arabia')">القصيم</span>
+      <span class="r-chip" onclick="selectRegion('نجران','Najran, Saudi Arabia')">نجران</span>
+      <span class="r-chip" onclick="selectRegion('دبي','Dubai, UAE')">دبي 🇦🇪</span>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="applyRegion()" style="flex:1;background:linear-gradient(135deg,#7c3aed,#00d4ff);border:none;border-radius:10px;color:#fff;font-family:inherit;font-size:14px;font-weight:600;padding:12px;cursor:pointer">✓ تطبيق</button>
+      <button onclick="toggleRegionModal()" style="background:#1c2030;border:1px solid #252a3a;border-radius:10px;color:#6b7280;font-family:inherit;font-size:14px;padding:12px 20px;cursor:pointer">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.r-chip {
+  background:#1c2030;border:1px solid #252a3a;color:#6b7280;
+  font-size:12px;padding:5px 12px;border-radius:20px;cursor:pointer;transition:all 0.2s;
+}
+.r-chip:hover,.r-chip.active {
+  background:rgba(0,212,255,0.1);border-color:#00d4ff;color:#00d4ff;
+}
+</style>
+
+<script>
+function toggleRegionModal() {
+  const m = document.getElementById('regionModal');
+  m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+  if (m.style.display === 'flex') {
+    document.getElementById('regionInputAr').value = REGION_AR;
+    document.getElementById('regionInputEn').value = REGION;
+  }
+}
+function selectRegion(ar, en) {
+  document.getElementById('regionInputAr').value = ar;
+  document.getElementById('regionInputEn').value = en;
+  document.querySelectorAll('.r-chip').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+}
+function applyRegion() {
+  const ar = document.getElementById('regionInputAr').value.trim();
+  const en = document.getElementById('regionInputEn').value.trim();
+  if (!ar || !en) { alert('يرجى إدخال اسم المنطقة بالعربي والإنجليزي'); return; }
+  REGION_AR = ar;
+  REGION = en;
+  document.getElementById('regionLabel').textContent = ar;
+  const recEl = document.getElementById('recRegion');
+  if (recEl) recEl.textContent = ar;
+  toggleRegionModal();
+}
+document.getElementById('regionModal').addEventListener('click', function(e) {
+  if (e.target === this) toggleRegionModal();
+});
+</script>
+
 </body>
 </html>
